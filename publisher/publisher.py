@@ -6,7 +6,16 @@ params = pika.URLParameters('amqp://user:password@rabbitmq/')
 connection = pika.BlockingConnection(params)
 channel = connection.channel()
 
-channel.queue_declare(queue='task_queue', durable=True)
+# Создание DLQ
+dlq_name = 'dlq_task_queue'
+channel.queue_declare(queue=dlq_name, durable=True)
+
+# Создание основной очереди с указанием DLQ
+args = {
+    'x-dead-letter-exchange': '',  # Используем default exchange
+    'x-dead-letter-routing-key': dlq_name  # Направляем сообщения в DLQ
+}
+channel.queue_declare(queue='task_queue', durable=True, arguments=args)
 
 try:
     while True:
